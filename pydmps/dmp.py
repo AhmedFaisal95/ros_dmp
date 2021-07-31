@@ -21,7 +21,7 @@ Modifications are made such that the software can be easily integrated in ROS.
 '''
 import numpy as np
 
-from cs import CanonicalSystem
+from pydmps.cs import CanonicalSystem
 
 
 class DMPs(object):
@@ -139,7 +139,7 @@ class DMPs(object):
         return self.w
 
 
-    def rollout(self, timesteps=None, goal=None, y0=None, **kwargs):
+    def rollout(self, timesteps=None, goal=None, y0=None, external_force_profile=None, **kwargs):
         """Generate a system trial, no feedback is incorporated."""
 
         if goal is not None:
@@ -156,6 +156,13 @@ class DMPs(object):
             else:
                 timesteps = self.timesteps
 
+	# +++
+        if external_force_profile is not None:
+            if (external_force_profile.shape != (timesteps, self.n_dmps)):
+                raise Exception('External force profile of incorrect size provided!')
+        else:
+            external_force_profile = np.zeros((timesteps, self.n_dmps))
+
         # set up tracking vectors
         y_track = np.zeros((timesteps, self.n_dmps))
         dy_track = np.zeros((timesteps, self.n_dmps))
@@ -163,7 +170,10 @@ class DMPs(object):
         for t in range(timesteps):
 
             # run and record timestep
-            y_track[t], dy_track[t], ddy_track[t] = self.step(**kwargs)
+            # y_track[t], dy_track[t], ddy_track[t] = self.step(**kwargs)
+		
+	    # +++
+            y_track[t], dy_track[t], ddy_track[t] = self.step(external_force=external_force_profile[t,:], **kwargs)
 
         return y_track, dy_track, ddy_track
 
